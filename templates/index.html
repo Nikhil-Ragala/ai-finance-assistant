@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Finance Assistant</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- ============ AUTH ============ -->
+<section id="auth-view" class="auth">
+  <div class="auth-card">
+    <h1>AI Finance Assistant</h1>
+    <p class="muted">Track spending, let AI categorise it, and stay on budget.</p>
+    <div class="tabs small">
+      <button class="tab active" data-auth="login">Log in</button>
+      <button class="tab" data-auth="register">Register</button>
+    </div>
+    <form id="auth-form" novalidate>
+      <label id="name-row" class="hidden">Name<input id="auth-name" autocomplete="name"></label>
+      <label>Email<input id="auth-email" type="email" autocomplete="email" required></label>
+      <label>Password<input id="auth-password" type="password" autocomplete="current-password" required></label>
+      <p id="auth-error" class="error" role="alert"></p>
+      <button class="btn primary" id="auth-submit" type="submit">Log in</button>
+    </form>
+    <p class="muted tiny">Educational project. Not professional financial advice.</p>
+  </div>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app-view" class="hidden">
+  <header class="topbar">
+    <div class="brand">AI Finance Assistant</div>
+    <nav class="tabs" id="main-tabs">
+      <button class="tab active" data-view="dashboard">Dashboard</button>
+      <button class="tab" data-view="transactions">Transactions</button>
+      <button class="tab" data-view="budgets">Budgets</button>
+      <button class="tab" data-view="insights">Insights</button>
+      <button class="tab" data-view="chat">Assistant</button>
+      <button class="tab hidden" data-view="admin" id="admin-tab">Admin</button>
+    </nav>
+    <div class="user"><span id="user-name"></span><button class="btn ghost" id="logout-btn">Log out</button></div>
+  </header>
+
+  <main>
+    <div class="monthbar">
+      <label>Month <input type="month" id="month-picker"></label>
+    </div>
+
+    <!-- Dashboard -->
+    <section id="view-dashboard" class="view">
+      <div class="cards">
+        <div class="card stat"><span>Income</span><strong id="st-income">-</strong></div>
+        <div class="card stat"><span>Expenses</span><strong id="st-expense">-</strong></div>
+        <div class="card stat"><span>Month balance</span><strong id="st-month">-</strong></div>
+        <div class="card stat"><span>Available balance</span><strong id="st-balance">-</strong></div>
+      </div>
+      <div id="alerts"></div>
+      <div class="grid2">
+        <div class="card"><h3>Spending by category</h3><div class="chart-box"><canvas id="chart-cat"></canvas></div><p class="muted" id="cat-empty"></p></div>
+        <div class="card"><h3>Monthly trend</h3><div class="chart-box"><canvas id="chart-trend"></canvas></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>Budget usage</h3><div id="dash-budgets"></div></div>
+        <div class="card"><h3>Next month forecast</h3><div id="forecast"></div></div>
+      </div>
+    </section>
+
+    <!-- Transactions -->
+    <section id="view-transactions" class="view hidden">
+      <div class="card">
+        <h3 id="tx-form-title">Add transaction</h3>
+        <form id="tx-form" class="form-row" novalidate>
+          <input type="hidden" id="tx-id">
+          <label>Date<input type="date" id="tx-date" required></label>
+          <label class="grow">Description<input id="tx-desc" maxlength="200" placeholder="e.g. swiggy dinner 450" required></label>
+          <label>Amount (₹)<input type="number" id="tx-amount" min="0" step="0.01" required></label>
+          <label>Type
+            <select id="tx-type"><option value="expense">Expense</option><option value="income">Income</option></select>
+          </label>
+          <label>Category
+            <select id="tx-category"></select>
+          </label>
+          <div class="form-actions">
+            <button class="btn primary" type="submit" id="tx-submit">Add</button>
+            <button class="btn ghost hidden" type="button" id="tx-cancel">Cancel</button>
+          </div>
+        </form>
+        <p id="tx-hint" class="hint"></p>
+        <p id="tx-error" class="error" role="alert"></p>
+      </div>
+
+      <div class="card">
+        <h3>Transaction history</h3>
+        <div class="filters">
+          <input id="f-search" placeholder="Search description">
+          <select id="f-type"><option value="">All types</option><option value="expense">Expense</option><option value="income">Income</option></select>
+          <select id="f-category"></select>
+          <input type="date" id="f-from" title="From">
+          <input type="date" id="f-to" title="To">
+          <button class="btn ghost" id="f-clear">Clear</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Description</th><th>Category</th><th class="num">Amount</th><th></th></tr></thead>
+            <tbody id="tx-body"></tbody>
+          </table>
+        </div>
+        <div class="pager"><button class="btn ghost" id="pg-prev">Prev</button><span id="pg-info"></span><button class="btn ghost" id="pg-next">Next</button></div>
+      </div>
+    </section>
+
+    <!-- Budgets -->
+    <section id="view-budgets" class="view hidden">
+      <div class="card">
+        <h3>Set a budget for this month</h3>
+        <form id="budget-form" class="form-row" novalidate>
+          <label>Category<select id="b-category"></select></label>
+          <label>Limit (₹)<input type="number" id="b-limit" min="1" step="1" required></label>
+          <div class="form-actions"><button class="btn primary" type="submit">Save budget</button></div>
+        </form>
+        <p id="b-error" class="error" role="alert"></p>
+      </div>
+      <div class="card"><h3>Budget status</h3><div id="budget-list"></div></div>
+    </section>
+
+    <!-- Insights -->
+    <section id="view-insights" class="view hidden">
+      <div class="card"><h3>AI insights</h3><ul id="insight-list" class="insights"></ul><p class="muted tiny" id="insight-note"></p></div>
+    </section>
+
+    <!-- Chatbot -->
+    <section id="view-chat" class="view hidden">
+      <div class="card chat">
+        <h3>Finance assistant</h3>
+        <div id="chat-log" class="chat-log"></div>
+        <form id="chat-form" class="chat-form"><input id="chat-input" placeholder="Ask e.g. how do I add a budget?" autocomplete="off"><button class="btn primary">Send</button></form>
+        <p class="muted tiny">Answers questions about this app and your own spending. No investment, tax or loan advice.</p>
+      </div>
+    </section>
+
+    <!-- Admin -->
+    <section id="view-admin" class="view hidden">
+      <div class="card">
+        <h3>Users</h3>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>Name</th><th>Email</th><th class="num">Transactions</th><th></th></tr></thead><tbody id="admin-body"></tbody></table></div>
+      </div>
+      <div class="card">
+        <h3>Model</h3>
+        <p class="muted">Retrain the category classifier on the base dataset plus all user corrections.</p>
+        <button class="btn primary" id="retrain-btn">Retrain model</button>
+        <p id="retrain-msg" class="hint"></p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="toast" class="toast hidden" role="status"></div>
+<script src="/static/vendor/chart.umd.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>

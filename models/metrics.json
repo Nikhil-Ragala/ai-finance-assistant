@@ -1,0 +1,102 @@
+{
+  "preprocessing": {
+    "raw_rows": 3690,
+    "after_dedup": 3660,
+    "after_dropping_missing": 3635,
+    "clean_rows": 3635
+  },
+  "classifier": {
+    "train_size": 2668,
+    "test_size": 667,
+    "comparison": {
+      "Logistic Regression": {
+        "accuracy": 0.8516,
+        "macro_f1": 0.8523
+      },
+      "Naive Bayes": {
+        "accuracy": 0.8501,
+        "macro_f1": 0.8533
+      },
+      "Linear SVM": {
+        "accuracy": 0.8546,
+        "macro_f1": 0.8562
+      },
+      "Random Forest": {
+        "accuracy": 0.8531,
+        "macro_f1": 0.8534
+      }
+    },
+    "selected": "Logistic Regression",
+    "accuracy": 0.8516,
+    "per_class": {
+      "Food": {
+        "precision": 0.878,
+        "recall": 0.783,
+        "f1-score": 0.828,
+        "support": 83.0
+      },
+      "Transport": {
+        "precision": 0.866,
+        "recall": 0.855,
+        "f1-score": 0.861,
+        "support": 83.0
+      },
+      "Shopping": {
+        "precision": 0.894,
+        "recall": 0.905,
+        "f1-score": 0.899,
+        "support": 84.0
+      },
+      "Bills": {
+        "precision": 0.783,
+        "recall": 0.857,
+        "f1-score": 0.818,
+        "support": 84.0
+      },
+      "Entertainment": {
+        "precision": 0.886,
+        "recall": 0.843,
+        "f1-score": 0.864,
+        "support": 83.0
+      },
+      "Health": {
+        "precision": 0.763,
+        "recall": 0.855,
+        "f1-score": 0.807,
+        "support": 83.0
+      },
+      "Education": {
+        "precision": 0.959,
+        "recall": 0.845,
+        "f1-score": 0.899,
+        "support": 84.0
+      },
+      "Other": {
+        "precision": 0.818,
+        "recall": 0.867,
+        "f1-score": 0.842,
+        "support": 83.0
+      }
+    },
+    "macro_avg": {
+      "precision": 0.856,
+      "recall": 0.851,
+      "f1-score": 0.852
+    }
+  },
+  "forecast": {
+    "months_total": 23,
+    "train_months": 19,
+    "test_months": 4,
+    "linear_regression": {
+      "MAE": 37585.02,
+      "MSE": 1862124244.52,
+      "RMSE": 43152.34,
+      "R2": -3.141
+    },
+    "mean_baseline": {
+      "MAE": 37991.35,
+      "RMSE": 43509.13
+    }
+  }
+}
