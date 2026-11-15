@@ -1,113 +1,216 @@
 # AI Finance Assistant
 
-A beginner-friendly personal finance app with machine learning, built from the *AI Finance Assistant SRS v1.0*.
+A simple web app that helps you track your money. You add your income and expenses, and the app uses **machine learning** to guess the category of each expense (for example, `swiggy dinner 450` becomes **Food**). It also shows charts, keeps your budgets, and gives you simple tips about your spending.
 
-Add income and expenses, let an ML model **auto-categorise** them (`"swiggy dinner 450"` → Food), set **budgets**, see **dashboards**, get a **spending forecast** and simple **AI insights**, and ask a small **chatbot** how the app works.
-
-> Educational / portfolio project. Insights are not professional financial advice.
+> This is a learning project. The tips it gives are **not** professional financial advice.
 
 ![Dashboard](docs/screenshots/02_dashboard.png)
 
-## Features (mapped to the SRS)
+---
 
-| SRS section | What's implemented |
+## Why this project?
+
+Many people (especially students) do not know where their money goes each month. Writing every expense by hand and sorting it into categories is boring, so most people stop doing it.
+
+This app makes it easier:
+- You only type a short note, like `uber ride 300`.
+- The AI picks the category for you.
+- The app shows you where your money went, and warns you when you spend too much.
+
+---
+
+## What can it do?
+
+| Feature | In simple words |
 |---|---|
-| 9.1 Authentication | Register / login / logout, hashed passwords, session cookies, users only see their own data |
-| 9.2 Transactions | Add, edit, delete, history, search + filters (text, type, category, date range, amount) + pagination |
-| 9.3 AI categorisation | TF-IDF + Logistic Regression; live suggestion while typing; user can correct it; corrections are stored and used when the admin retrains |
-| 9.4 Budgets | Monthly overall + per-category limits, usage %, warning at 80%, alert when exceeded |
-| 9.5 Dashboard | Income, expenses, balance, category chart, monthly trend chart |
-| 9.6 Forecast | Linear Regression on monthly totals; shown as an estimate; falls back to an average (or a message) when there is too little history |
-| 9.7 Insights | Rule-based messages (top category, change vs last month, budget usage, savings rate) + disclaimer |
-| 8 / 12 Chatbot | Rule-based assistant for app questions and "how much did I spend…" |
-| 8 / 12 Admin (optional) | List/delete users, retrain the model with user corrections |
+| **Sign up and log in** | Each person has their own account. You can only see your own data. Passwords are stored in a safe, scrambled form. |
+| **Add, edit, delete expenses** | Keep a list of all your income and expenses. You can search and filter it by text, type, category, date or amount. |
+| **AI category guess** | While you type a description, the app suggests a category and shows how sure it is (for example, "Food, 99% confident"). |
+| **Fix the AI** | If the AI is wrong, you change the category yourself. The app remembers your correction. |
+| **Budgets** | Set a monthly limit for everything, or for one category like Food. You get a warning at 80% and an alert when you go over. |
+| **Dashboard** | See your total income, total expenses, balance, a pie chart of spending by category, and a bar chart for each month. |
+| **Next month estimate** | The app guesses how much you may spend next month, based on your past months. |
+| **Tips (insights)** | Short messages such as "Your food spending went up 20% compared with last month." |
+| **Chat helper** | A small chatbot that answers questions like "how do I add a budget?" or "how much did I spend on food?". |
+| **Admin page** | A special admin account can see the users and retrain the AI using the corrections people made. |
 
-## Tech stack
+---
 
-Python · Flask · SQLite · scikit-learn · pandas / NumPy · joblib · HTML / CSS / vanilla JS · Chart.js (bundled locally, works offline)
+## How does the AI part work?
 
-## Quick start
+**1. Guessing the category**
+- The app reads the description you typed, for example `swiggy dinner 450`.
+- It cleans the text: small letters only, numbers and symbols removed. So it becomes `swiggy dinner`.
+- It turns the words into numbers (this is called **TF-IDF**). It looks at whole words and also at small pieces of words, so a spelling mistake like `swigy` still works.
+- A **Logistic Regression** model then picks the most likely category out of 8: Food, Transport, Shopping, Bills, Entertainment, Health, Education, Other.
+- The model was trained on a fake (made-up) dataset, so no real bank data or personal data was used.
 
-```bash
-# 1. install
-python -m venv .venv && source .venv/bin/activate     # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+**2. Guessing next month's spending**
+- The app adds up your spending for each past month.
+- A **Linear Regression** model draws a straight line through those months and extends it by one month.
+- If you have fewer than 3 months of data, the app does not pretend to be smart. It shows a simple average and tells you why.
 
-# 2. (optional) re-generate data and re-train. A trained model is already included.
-python ml/generate_dataset.py
-python -m ml.train
+**3. Learning from mistakes**
+- Every time you fix a wrong category, the app saves your correction.
+- The admin can press **Retrain model** to train the AI again with those corrections.
 
-# 3. load demo data (creates demo@example.com / demo123 and admin@example.com / admin123)
-python seed_demo.py
+---
 
-# 4. run
-python app.py
-# open http://127.0.0.1:5000
-```
+## How good is the AI?
 
-Or skip the demo data and just click **Register** to create your own account.
-Any account registered with the email `admin@example.com` becomes the admin (change with the `ADMIN_EMAIL` env var).
+These numbers are from the test data (data the model had never seen):
 
-Run the tests:
-
-```bash
-python -m pytest -q          # 30 tests
-```
-
-## Project structure
-
-```
-app.py                  Flask app: all API endpoints, auth, analytics, insights, chatbot, admin
-seed_demo.py            Demo users + ~7 months of sample transactions
-ml/
-  generate_dataset.py   Synthetic, non-personal transaction dataset
-  text.py               Text preprocessing (shared by training and the app)
-  train.py              Data cleaning, model comparison, evaluation, saves model + metrics
-  forecast.py           Spending forecast (Linear Regression)
-models/                 category_model.joblib, metrics.json
-data/transactions.csv   Generated dataset
-notebooks/train_models.ipynb   Explained, executed training notebook
-templates/ static/      Frontend (HTML, CSS, JS, Chart.js)
-tests/test_app.py       Functional + ML tests (SRS section 22)
-docs/                   Charts and screenshots used in the report
-```
-
-## API (SRS section 20)
-
-| Method | Endpoint | Purpose |
-|---|---|---|
-| POST | `/register`, `/login`, `/logout` | Accounts (`GET /me` returns the current user) |
-| POST / GET | `/transactions` | Add / list (filters: `search`, `type`, `category`, `from`, `to`, `min_amount`, `max_amount`, `page`, `per_page`) |
-| PUT / DELETE | `/transactions/<id>` | Update (changing the category records a correction) / delete |
-| POST | `/predict-category` | `{"description": "..."}` → category + confidence |
-| GET | `/dashboard?month=YYYY-MM` | Totals, category spending, trend, budgets, alerts, forecast |
-| POST / GET | `/budgets` | Create or update / list budgets for a month (`DELETE /budgets/<id>`) |
-| GET | `/insights?month=YYYY-MM` | Insight messages + disclaimer |
-| POST | `/chatbot` | `{"message": "..."}` → reply |
-| GET / DELETE / POST | `/admin/users`, `/admin/retrain` | Admin only |
-
-## ML results
-
-Numbers below are from `models/metrics.json` (80/20 train/test split, unseen test data).
-
-**Expense classifier** (3,000+ synthetic transactions, 8 categories): ~**85% accuracy**. Logistic Regression, Naive Bayes, Linear SVM and Random Forest all land within about 1 point of each other, so Logistic Regression was chosen because it is simple and explainable. The dataset deliberately includes ambiguous descriptions (e.g. "upi payment", "amazon order") that cannot be classified from text alone; an earlier, cleaner version scored 100%, which was a sign of label leakage rather than a good model.
-
-**Spending forecast:** Linear Regression, evaluated with MAE / MSE / RMSE / R² on the last months of the data. The synthetic data has no real trend, so it does **not** beat a simple average baseline here (R² is negative). This is reported honestly in the report rather than hidden.
+- **Category guessing: about 85% correct.** I tried four different methods (Logistic Regression, Naive Bayes, Linear SVM, Random Forest). All gave almost the same result, so I kept Logistic Regression because it is the simplest to explain.
+- **Why not 100%?** Some descriptions are impossible to guess, like `upi payment` or `amazon order`. They could be anything. An early version got 100% only because the fake data was too easy, so I made the data more realistic.
+- **Next month estimate:** On the fake dataset it is **not** better than a simple average, because fake data has no real trend. This is shown honestly in the report. With real data that goes up or down over time, it works better.
 
 ![Confusion matrix](docs/confusion_matrix.png)
 
-## Security notes
+*(The confusion matrix shows which categories the AI mixes up. Dark squares on the diagonal mean correct guesses.)*
 
-- Passwords hashed with Werkzeug (`pbkdf2`/`scrypt`), never stored or logged in plain text.
-- Every query is scoped by `user_id`; other users' records return 404.
-- All SQL is parameterised; the UI escapes all user text before rendering.
-- Before deploying for real: set `SECRET_KEY`, serve over HTTPS, and run behind a production server (gunicorn / waitress) instead of `app.run(debug=True)`.
-- The model file is loaded with joblib (pickle) - only load model files you trained yourself.
+---
 
-## Limitations
+## Screenshots
 
-ML predictions depend on training data quality; new users have little history for forecasting; descriptions can be ambiguous; forecasts are estimates; this app does not replace a financial advisor. Out of scope per the SRS: stock trading, bank integrations, loan decisions, tax advice, automatic transfers.
+| Add an expense (AI suggests a category) | Budgets |
+|---|---|
+| ![Transactions](docs/screenshots/03_transactions_ai_hint.png) | ![Budgets](docs/screenshots/04_budgets.png) |
 
-## Future work
+| Tips (insights) | Chat helper |
+|---|---|
+| ![Insights](docs/screenshots/05_insights.png) | ![Chat](docs/screenshots/06_assistant.png) |
 
-Bank/UPI integration, OCR receipt scanning, voice entry, better time-series forecasting (e.g. seasonality), anomaly detection, savings goals, mobile app, cloud deployment.
+---
+
+## Tools used
+
+- **Python** and **Flask** for the backend (the part that works behind the scenes)
+- **SQLite** for the database (one simple file, no setup needed)
+- **scikit-learn**, **pandas**, **NumPy** for machine learning and data
+- **HTML, CSS, JavaScript** and **Chart.js** for the pages and charts
+
+---
+
+## How to run it on your computer
+
+You need **Python 3.9 or newer**.
+
+1. **Download** this project and extract the zip (if you downloaded a zip). Open a terminal inside the project folder.
+2. **Make a virtual environment** (a clean box for this project's packages):
+   ```
+   python -m venv .venv
+   ```
+3. **Turn it on:**
+   - Windows: `.venv\Scripts\activate`
+   - Mac / Linux: `source .venv/bin/activate`
+4. **Install the packages:**
+   ```
+   pip install -r requirements.txt
+   ```
+5. **Add demo data** (makes a demo user with about 7 months of sample expenses):
+   ```
+   python seed_demo.py
+   ```
+6. **Start the app:**
+   ```
+   python app.py
+   ```
+7. Open your browser and go to **http://127.0.0.1:5000**
+
+**Demo logins**
+
+| Who | Email | Password |
+|---|---|---|
+| Normal user | `demo@example.com` | `demo123` |
+| Admin | `admin@example.com` | `admin123` |
+
+You can also click **Register** to make your own account.
+
+**If the page does not open:** port 5000 may be busy. Run this instead and open http://127.0.0.1:5001:
+```
+python -c "from app import app; app.run(port=5001)"
+```
+
+---
+
+## How to run the tests
+
+```
+python -m pytest -q
+```
+You should see `30 passed`. The tests check login, adding and editing expenses, budgets, the dashboard numbers, the chatbot, the admin page, and the AI.
+
+---
+
+## What is inside the project?
+
+```
+app.py                  The main Flask app (all pages and API routes)
+seed_demo.py            Creates demo users and sample expenses
+requirements.txt        List of packages to install
+ml/                     Everything about machine learning
+  generate_dataset.py     Makes the fake training data
+  text.py                 Cleans the description text
+  train.py                Trains and tests the AI, saves it
+  forecast.py             Next month estimate
+models/                 The saved trained model and its test results
+data/                   The fake dataset (CSV)
+notebooks/              A notebook that explains the training step by step
+templates/ static/      The web pages (HTML, CSS, JavaScript, Chart.js)
+tests/                  Automatic tests
+docs/                   Charts and screenshots
+AI_Finance_Assistant_Report.docx   The full project report
+```
+
+---
+
+## Main API routes (for developers)
+
+| What you want | Route |
+|---|---|
+| Sign up / log in / log out | `POST /register`, `POST /login`, `POST /logout` |
+| Add or list expenses | `POST /transactions`, `GET /transactions` |
+| Edit or delete an expense | `PUT /transactions/<id>`, `DELETE /transactions/<id>` |
+| Guess a category | `POST /predict-category` |
+| Dashboard numbers | `GET /dashboard?month=YYYY-MM` |
+| Budgets | `POST /budgets`, `GET /budgets` |
+| Tips | `GET /insights?month=YYYY-MM` |
+| Chat helper | `POST /chatbot` |
+| Admin only | `GET /admin/users`, `POST /admin/retrain` |
+
+---
+
+## Is it safe?
+
+- Passwords are **hashed** (scrambled) and never saved as plain text.
+- Every request checks who you are, so one user can never see another user's data.
+- User input is checked on the server, and all text is made safe before it is shown on the page.
+- If you ever put this on the internet, set your own `SECRET_KEY`, use HTTPS, and use a real production server instead of `python app.py`.
+
+---
+
+## Limits (things it cannot do)
+
+- The AI was trained on **made-up data**, so on real expenses it may be less accurate.
+- New users have little history, so the next month estimate is rough. It is only an estimate.
+- Unclear descriptions (like `payment`) are hard to guess. That is why you can correct the category.
+- The chatbot only knows a fixed set of questions.
+- It does **not** connect to banks, give investment or tax advice, or move money.
+
+---
+
+## Ideas for the future
+
+- Connect to UPI or bank statements
+- Read receipts from photos (OCR)
+- Add expenses by voice
+- Better forecasting that understands seasons (like festival months)
+- Warnings for unusual spending
+- Savings goals
+- A mobile app and online hosting
+
+---
+
+## Made by
+
+**Nikhil Ragala** — built as the major project of an AI internship, based on the *AI Finance Assistant SRS v1.0*.
